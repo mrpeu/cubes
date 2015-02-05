@@ -1,0 +1,8 @@
+{
+  "name": "cubes",
+  "dependencies": {
+    "three.js": "*",
+    "stats.js": "*"
+  },
+  "devDependencies": {}
+}
