@@ -4,7 +4,7 @@
 			var camera, scene, raycaster, renderer;
 
 			var mouse = new THREE.Vector2(), INTERSECTED;
-			var radius = 100, theta = 0, zoom = .8;
+			var radius = 100, theta = 0, zoom = .6;
 
 			var floor, items;
 
@@ -15,32 +15,35 @@
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
-				
-				camera = new THREE.OrthographicCamera( window.innerWidth / - 2 *zoom, window.innerWidth / 2*zoom, window.innerHeight / 2*zoom, window.innerHeight / - 2*zoom, -750, 1000 );
+
+				camera = new THREE.OrthographicCamera( window.innerWidth / - 2 *zoom, window.innerWidth / 2*zoom, window.innerHeight / 2*zoom, window.innerHeight / - 2*zoom, -800, 1250 );
 
 				scene = new THREE.Scene();
 
 				var light = new THREE.DirectionalLight( 0xffffff, 1 );
-				var shadowCameraSize = 800;
-				light.position.set( -100, 500, -100 );
+				var shadowCameraSize = 700;
+				light.position.set( -shadowCameraSize/5, shadowCameraSize/1.5, -shadowCameraSize/5 );
 				light.castShadow = true;
 				light.shadowCameraNear = 200;
-				light.shadowCameraFar = shadowCameraSize*2;
+				light.shadowCameraFar = shadowCameraSize;
 				light.shadowCameraLeft = -shadowCameraSize;
 				light.shadowCameraRight = shadowCameraSize;
 				light.shadowCameraTop = shadowCameraSize;
 				light.shadowCameraBottom = -shadowCameraSize;
-				light.shadowCameraVisible = false;
-
+				light.shadowMapWidth = 1024;
+				light.shadowMapHeight = 1024;
+				light.shadowDarkness = .2; // Default: .5
+// 				light.shadowCameraVisible = true;
 				scene.add( light );
 
 				// floor
 
 				floor = new THREE.Mesh(
 					new THREE.PlaneGeometry( 1, 1 ),
-					new THREE.MeshLambertMaterial({ color: 0xf0f0f0 })
+					new THREE.MeshLambertMaterial({ color: 0xfefefe })
 				);
 				floor.material.ambient = floor.material.color;
+				floor.translateY(-1);
  				floor.scale.set( 1500, 1500, 1 );
 				floor.rotation.set(-Math.PI/2, 0, 0);
 				floor.receiveShadow = true;
@@ -90,14 +93,11 @@
 
 				raycaster = new THREE.Raycaster();
 
-				renderer = new THREE.WebGLRenderer();
-				renderer.setClearColor( 0xf0f0f0 );
+				renderer = new THREE.WebGLRenderer({ antialias: true });
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.sortObjects = false;
 				renderer.shadowMapEnabled = true;
-				renderer.shadowMapType = THREE.PCFSoftShadowMap;
-// 				renderer.shadowMapType = THREE.PCFShadowMap;
+				renderer.shadowMapSoft = false;
 				container.appendChild(renderer.domElement);
 
 				stats = new Stats();
@@ -151,11 +151,11 @@
 
 			function render() {
 
-				theta += 0.75;
+				theta += 0.3;
 
-				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta )/2 );
+				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
 				camera.position.y = radius / 3;//Math.cos( THREE.Math.degToRad( theta )/2 );
-				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta )/2 );
+				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta/360 ) );
 				camera.lookAt( scene.position );
 
 				camera.updateMatrixWorld();
