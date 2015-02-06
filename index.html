@@ -12,15 +12,21 @@
 				margin: 0px;
 				overflow: hidden;
 			}
-          
-            .title {
-              background: transparent;
-              position: fixed;
-              top: 8px;
-              left: 8px;
-              text-align: center;
-              width: 100%;
-            }
+
+			.title {
+				background: transparent;
+				position: fixed;
+				top: 8px;
+				left: 8px;
+				text-align: center;
+				width: 100%;
+			}
+
+			.title > span {
+				background-color: rgba(240,240,240,0.8);
+				box-shadow: 0 0 2px 2px rgba(240,240,240,0.8);
+				padding: 0 4px;
+			}
 		</style>
 	</head>
 	<body>
@@ -29,7 +35,7 @@
 
 		<script src="./vendor/stats.js/build/stats.min.js"></script>
 
-        <div class="title">test/cubes...</div>
+        <div class="title"><span>test/cubes...</span></div>
         
         <script src="index.js"></script>
 

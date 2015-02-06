@@ -6,6 +6,8 @@
 			var mouse = new THREE.Vector2(), INTERSECTED;
 			var radius = 100, theta = 0;
 
+			var floor, items;
+
 			init();
 			animate();
 
@@ -20,11 +22,28 @@
 
 				var light = new THREE.DirectionalLight( 0xffffff, 1 );
 				light.position.set( 1, 1, 1 ).normalize();
+				// light.shadowMapWidth = 1024; // default is 512
+				// light.shadowMapHeight = 1024; // default is 512
 				scene.add( light );
+
+				// floor
+
+				floor = new THREE.Mesh(
+					new THREE.PlaneGeometry( 1, 1 ),
+					new THREE.MeshBasicMaterial({ color: 0xf0f0f0 })
+				);
+ 				floor.scale.set( 1500, 1500, 1 );
+				floor.rotation.set(-Math.PI/2, 0, 0);
+				scene.add( floor );
+		
+
+				// items 
+				items = new THREE.Object3D();
+				scene.add(items);
 
 				var geometry = new THREE.BoxGeometry( 20, 20, 20 );
 
-				for ( var i = 0; i < 2000; i ++ ) {
+				for ( var i = 0; i < 10; i ++ ) {
 
 					// var color = Math.random() * 0xffffff;
 					var value = Math.random() * 0xFF | 0;
@@ -34,20 +53,22 @@
 					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: color } ) );
 
 					object.position.x = Math.random() * 800 - 400;
-					object.position.y = Math.random() * 800 - 400;
+// 					object.position.y = Math.random() * 800 - 400;
 					object.position.z = Math.random() * 800 - 400;
 
-					object.rotation.x = Math.random() * 2 * Math.PI;
-					object.rotation.y = Math.random() * 2 * Math.PI;
-					object.rotation.z = Math.random() * 2 * Math.PI;
+					// object.rotation.x = Math.random() * 2 * Math.PI;
+					// object.rotation.y = Math.random() * 2 * Math.PI;
+					// object.rotation.z = Math.random() * 2 * Math.PI;
 
 					object.scale.x = Math.random() + 0.5;
 					object.scale.y = Math.random() + 0.5;
 					object.scale.z = Math.random() + 0.5;
 
-					scene.add( object );
+					items.add( object );
 
 				}
+
+
 
 				raycaster = new THREE.Raycaster();
 
@@ -56,6 +77,7 @@
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.sortObjects = false;
+				// renderer.shadowMapType = THREE.PCFSoftShadowMap;
 				container.appendChild(renderer.domElement);
 
 				stats = new Stats();
@@ -100,26 +122,27 @@
 				requestAnimationFrame( animate );
 
 				render();
+
 				stats.update();
 
 			}
 
 			function render() {
 
-// 				theta += 0.1;
+				theta += 0.75;
 
-//				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
-//				camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
-//				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
-//				camera.lookAt( scene.position );
-//
-//				camera.updateMatrixWorld();
+				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta )/2 );
+				camera.position.y = radius;// * Math.sin( THREE.Math.degToRad( theta ) );
+				camera.position.z = radius;// * Math.cos( THREE.Math.degToRad( theta ) );
+				camera.lookAt( scene.position );
+
+				camera.updateMatrixWorld();
 
 				// find intersections
 
 				raycaster.setFromCamera( mouse, camera );
 
-				var intersects = raycaster.intersectObjects( scene.children );
+				var intersects = raycaster.intersectObjects( items.children );
 
 				if ( intersects.length > 0 ) {
 
@@ -145,5 +168,4 @@
 				}
 
 				renderer.render( scene, camera );
-
 			}
