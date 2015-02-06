@@ -4,7 +4,7 @@
 			var camera, scene, raycaster, renderer;
 
 			var mouse = new THREE.Vector2(), INTERSECTED;
-			var radius = 100, theta = 0;
+			var radius = 100, theta = 0, zoom = .8;
 
 			var floor, items;
 
@@ -15,25 +15,35 @@
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
-
-				camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, - 500, 1000 );
+				
+				camera = new THREE.OrthographicCamera( window.innerWidth / - 2 *zoom, window.innerWidth / 2*zoom, window.innerHeight / 2*zoom, window.innerHeight / - 2*zoom, -750, 1000 );
 
 				scene = new THREE.Scene();
 
 				var light = new THREE.DirectionalLight( 0xffffff, 1 );
-				light.position.set( 1, 1, 1 ).normalize();
-				// light.shadowMapWidth = 1024; // default is 512
-				// light.shadowMapHeight = 1024; // default is 512
+				var shadowCameraSize = 800;
+				light.position.set( -100, 500, -100 );
+				light.castShadow = true;
+				light.shadowCameraNear = 200;
+				light.shadowCameraFar = shadowCameraSize*2;
+				light.shadowCameraLeft = -shadowCameraSize;
+				light.shadowCameraRight = shadowCameraSize;
+				light.shadowCameraTop = shadowCameraSize;
+				light.shadowCameraBottom = -shadowCameraSize;
+				light.shadowCameraVisible = false;
+
 				scene.add( light );
 
 				// floor
 
 				floor = new THREE.Mesh(
 					new THREE.PlaneGeometry( 1, 1 ),
-					new THREE.MeshBasicMaterial({ color: 0xf0f0f0 })
+					new THREE.MeshLambertMaterial({ color: 0xf0f0f0 })
 				);
+				floor.material.ambient = floor.material.color;
  				floor.scale.set( 1500, 1500, 1 );
 				floor.rotation.set(-Math.PI/2, 0, 0);
+				floor.receiveShadow = true;
 				scene.add( floor );
 		
 
@@ -43,7 +53,7 @@
 
 				var geometry = new THREE.BoxGeometry( 20, 20, 20 );
 
-				for ( var i = 0; i < 10; i ++ ) {
+				for ( var i = 0; i < 50; i ++ ) {
 
 					// var color = Math.random() * 0xffffff;
 					var value = Math.random() * 0xFF | 0;
@@ -52,21 +62,29 @@
 
 					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: color } ) );
 
+					object.scale.x = Math.random() + 0.5;
+					object.scale.y = Math.random() + 0.5;
+					object.scale.z = Math.random() + 0.5;
+
 					object.position.x = Math.random() * 800 - 400;
-// 					object.position.y = Math.random() * 800 - 400;
+					object.position.y = object.scale.y/2 //Math.random() * 800 - 400;
 					object.position.z = Math.random() * 800 - 400;
 
 					// object.rotation.x = Math.random() * 2 * Math.PI;
 					// object.rotation.y = Math.random() * 2 * Math.PI;
 					// object.rotation.z = Math.random() * 2 * Math.PI;
 
-					object.scale.x = Math.random() + 0.5;
-					object.scale.y = Math.random() + 0.5;
-					object.scale.z = Math.random() + 0.5;
+					object.castShadow = true;
 
 					items.add( object );
 
 				}
+
+// 				var test = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xff0000 } ) );
+// 				scene.add( test );
+// 				test.position.set( -50, 50, 0);
+				scene.add( new THREE.AxisHelper( 25 ) );
+
 
 
 
@@ -77,7 +95,9 @@
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.sortObjects = false;
-				// renderer.shadowMapType = THREE.PCFSoftShadowMap;
+				renderer.shadowMapEnabled = true;
+				renderer.shadowMapType = THREE.PCFSoftShadowMap;
+// 				renderer.shadowMapType = THREE.PCFShadowMap;
 				container.appendChild(renderer.domElement);
 
 				stats = new Stats();
@@ -95,10 +115,10 @@
 
 			function onWindowResize() {
 
-				camera.left = window.innerWidth / - 2;
-				camera.right = window.innerWidth / 2;
-				camera.top = window.innerHeight / 2;
-				camera.bottom = window.innerHeight / - 2;
+				camera.left = window.innerWidth / - 2 * zoom;
+				camera.right = window.innerWidth / 2 * zoom;
+				camera.top = window.innerHeight / 2 * zoom;
+				camera.bottom = window.innerHeight / - 2 * zoom;
 
 				camera.updateProjectionMatrix();
 
@@ -112,6 +132,8 @@
 
 				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+				mouse.moved = true;
 
 			}
 
@@ -132,8 +154,8 @@
 				theta += 0.75;
 
 				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta )/2 );
-				camera.position.y = radius;// * Math.sin( THREE.Math.degToRad( theta ) );
-				camera.position.z = radius;// * Math.cos( THREE.Math.degToRad( theta ) );
+				camera.position.y = radius / 3;//Math.cos( THREE.Math.degToRad( theta )/2 );
+				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta )/2 );
 				camera.lookAt( scene.position );
 
 				camera.updateMatrixWorld();
@@ -142,29 +164,34 @@
 
 				raycaster.setFromCamera( mouse, camera );
 
-				var intersects = raycaster.intersectObjects( items.children );
+				if( mouse.moved ){
 
-				if ( intersects.length > 0 ) {
+					mouse.moved = false;
 
-					if ( INTERSECTED != intersects[ 0 ].object ) {
+					var intersects = raycaster.intersectObjects( items.children );
+
+					if ( intersects.length > 0 ) {
+
+						if ( INTERSECTED != intersects[ 0 ].object ) {
+
+							if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+							INTERSECTED = intersects[ 0 ].object;
+							INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+							INTERSECTED.material.emissive.setHex( 0x0074B0 );
+
+						}
+
+						container.style.setProperty("cursor", "pointer");
+
+					} else {
 
 						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
-						INTERSECTED = intersects[ 0 ].object;
-						INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-						INTERSECTED.material.emissive.setHex( 0x0074B0 );
+						INTERSECTED = null;
 
+						container.style.setProperty("cursor", "default");
 					}
-					
-					container.style.setProperty("cursor", "pointer");
-
-				} else {
-
-					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-					INTERSECTED = null;
-
-					container.style.setProperty("cursor", "default");
 				}
 
 				renderer.render( scene, camera );
