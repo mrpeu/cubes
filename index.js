@@ -89,6 +89,22 @@
 				scene.add( new THREE.AxisHelper( 25 ) );
 
 
+				// test
+
+				var mat = new THREE.LineDashedMaterial({ color: 0xd3d3d3, dashSize: 8, gapSize: 4, linewidth: 2 });
+				var geo = new THREE.Geometry();
+				geo.vertices.push(
+					new THREE.Vector3( 0, 0, 0 ),
+					new THREE.Vector3( 50, 50, 50 ),
+					new THREE.Vector3( -50, 75, 50 ),
+					new THREE.Vector3( 0, 100, 0 )
+				);
+				geo.computeLineDistances();
+				var lin = new THREE.Line( geo, mat, THREE.LineStrip);
+				scene.add( lin );
+
+				// /test
+
 
 
 				raycaster = new THREE.Raycaster();
