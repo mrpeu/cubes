@@ -6,12 +6,14 @@
 			var mouse = new THREE.Vector2(), INTERSECTED;
 			var radius = 100, theta = 0, zoom = .6;
 
-			var floor, items;
+			var floor, items, zones, selectionZone;
 
 			init();
 			animate();
 
 			function init() {
+
+				var GRIDRES = 20;
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
@@ -22,7 +24,7 @@
 
 				var light = new THREE.DirectionalLight( 0xffffff, 1 );
 				var shadowCameraSize = 700;
-				light.position.set( -shadowCameraSize/5, shadowCameraSize/1.5, -shadowCameraSize/5 );
+				light.position.set( -shadowCameraSize/5, shadowCameraSize/2.5, -shadowCameraSize/5 );
 				light.castShadow = true;
 				light.shadowCameraNear = 200;
 				light.shadowCameraFar = shadowCameraSize;
@@ -32,9 +34,13 @@
 				light.shadowCameraBottom = -shadowCameraSize;
 				light.shadowMapWidth = 1024;
 				light.shadowMapHeight = 1024;
-				light.shadowDarkness = .2; // Default: .5
+				light.shadowDarkness = .3; // Default: .5
 // 				light.shadowCameraVisible = true;
 				scene.add( light );
+
+// 				var light1 = light.clone();
+// 				light1.position.set( shadowCameraSize/5, shadowCameraSize/2.5, shadowCameraSize/5 );
+// 				scene.add( light1 );
 
 				// floor
 
@@ -44,66 +50,73 @@
 				);
 				floor.material.ambient = floor.material.color;
 				floor.translateY(-1);
- 				floor.scale.set( 1500, 1500, 1 );
+ 				floor.scale.set( 1600, 1600, 1 );
 				floor.rotation.set(-Math.PI/2, 0, 0);
 				floor.receiveShadow = true;
 				scene.add( floor );
+
+// 				var test = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xff0000 } ) );
+// 				scene.add( test );
+// 				test.position.set( -50, 50, 0);
+
+				scene.add( new THREE.AxisHelper( 25 ) );
+
+				var gridHelper = new THREE.GridHelper( floor.scale.x / 2, floor.scale.x / 4 / GRIDRES );
+				gridHelper.setColors( 0xa7a7a7, 0xc0c0c0 );
+				gridHelper.translateY( -1 );
+				gridHelper.receiveShadow = true;
+				scene.add( gridHelper );
+
+
+				// selection
+				
+				zones = new THREE.Object3D();
+				scene.add( zones );
+
+				selectionZone = addZoneRectangle( 0, 0, .5, GRIDRES*1.4,  GRIDRES*1.4, "selection", 0x0099E0 );
+				selectionZone.visible = false;
+				zones.add( selectionZone );
+
+				zones.add( new addZoneCircle( 0, 0, -1, 40, "test", 0xf00aaa ) );
 		
 
 				// items 
 				items = new THREE.Object3D();
 				scene.add(items);
 
-				var geometry = new THREE.BoxGeometry( 20, 20, 20 );
-
-				for ( var i = 0; i < 50; i ++ ) {
+				var geometry = new THREE.BoxGeometry( GRIDRES, GRIDRES, GRIDRES );
+				var nb = 50;
+				for ( var i = 0; i < nb; i ++ ) {
 
 					// var color = Math.random() * 0xffffff;
-					var value = Math.random() * 0xFF | 0;
+					var value = (i/nb) * 0xFF | 0;
 					var grayscale = (value << 16) | (value << 8) | value;
 					var color = '#' + grayscale.toString(16);
 
-					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: color } ) );
+					var item = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: color } ) );
 
-					object.scale.x = Math.random() + 0.5;
-					object.scale.y = Math.random() + 0.5;
-					object.scale.z = Math.random() + 0.5;
+					var a = Math.random(), b = Math.random();
+					item.position.set( 
+						10 + ( a*((800/GRIDRES)<<0) * GRIDRES) - 400,
+						0,
+						10 + ( b*((800/GRIDRES)<<0) * GRIDRES) - 400
+					);
 
-					object.position.x = Math.random() * 800 - 400;
-					object.position.y = object.scale.y/2 //Math.random() * 800 - 400;
-					object.position.z = Math.random() * 800 - 400;
+					item.scale.set(
+						( Math.random() * 3 << 0 ) + 1,
+						1 + i/100,
+						( Math.random() * 3 << 0 ) + 1
+					);
 
-					// object.rotation.x = Math.random() * 2 * Math.PI;
-					// object.rotation.y = Math.random() * 2 * Math.PI;
-					// object.rotation.z = Math.random() * 2 * Math.PI;
+					// item.rotation.x = Math.random() * 2 * Math.PI;
+					// item.rotation.y = Math.random() * 2 * Math.PI;
+					// item.rotation.z = Math.random() * 2 * Math.PI;
 
-					object.castShadow = true;
-
-					items.add( object );
+					item.castShadow = true;
+					item.name = "item#" + i;
+					items.add( item );
 
 				}
-
-// 				var test = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xff0000 } ) );
-// 				scene.add( test );
-// 				test.position.set( -50, 50, 0);
-				scene.add( new THREE.AxisHelper( 25 ) );
-
-
-				// test
-
-				var mat = new THREE.LineDashedMaterial({ color: 0xd3d3d3, dashSize: 8, gapSize: 4, linewidth: 2 });
-				var geo = new THREE.Geometry();
-				geo.vertices.push(
-					new THREE.Vector3( 0, 0, 0 ),
-					new THREE.Vector3( 50, 50, 50 ),
-					new THREE.Vector3( -50, 75, 50 ),
-					new THREE.Vector3( 0, 100, 0 )
-				);
-				geo.computeLineDistances();
-				var lin = new THREE.Line( geo, mat, THREE.LineStrip);
-				scene.add( lin );
-
-				// /test
 
 
 
@@ -123,10 +136,92 @@
 
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
-				//
+				document.addEventListener( 'click', onDocumentMouseClick, false );
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
+			}
+
+			function addZoneRectangle( x, y, z, w, h, name, color ) {
+
+				color = color || 0xa3a3a3;
+				var _w = w/2, _h = h/2;
+
+				var mat = new THREE.LineDashedMaterial({ color: color, dashSize: 6, gapSize: 3, linewidth: 2 });
+				var geo = new THREE.Geometry();
+
+				geo.vertices.push(
+					new THREE.Vector3( x-_w, y, z-_h ),
+					new THREE.Vector3( x+_w, y, z-_h ),
+					new THREE.Vector3( x+_w, y, z+_h ),
+					new THREE.Vector3( x-_w, y, z+_h ),
+					new THREE.Vector3( x-_w, y, z-_h )
+				);
+				geo.computeLineDistances();
+
+				var zone = new THREE.Line( geo, mat, THREE.LineStrip);
+				zone.name = name;
+				scene.add( zone );
+
+				return zone;
+			}
+
+			function addZoneCircle( x, y, z, rad, name, color ) {
+
+				color = color || 0xa3a3a3;
+
+				var seg = 32;
+				var mat = new THREE.LineDashedMaterial({ color: color, dashSize: 6, gapSize: 3, linewidth: 2 });
+				var geo = new THREE.Geometry();
+
+				for(var i = 0; i <= seg; i++) {
+					var segment = ( i * 360/seg ) * Math.PI / 180;
+					geo.vertices.push( new THREE.Vector3( Math.cos( segment ) * rad, 0, Math.sin( segment ) * rad ) );
+				}
+				geo.computeLineDistances();
+
+				var zone = new THREE.Line( geo, mat, THREE.LineStrip );
+				zone.name = name;
+				scene.add( zone );
+
+				return zone;
+			}
+
+			function selectObject( item ) {
+
+				if( item ) {
+
+					selectionZone.target = item;					
+					selectionZone.position.set( item.position.x, item.position.y, item.position.z );
+					selectionZone.scale.set( item.scale.x, item.scale.y, item.scale.z );
+					selectionZone.material.color.setHex( 0x0099e0 );
+					selectionZone.visible = true;
+
+					var tweenable = new Tweenable();
+
+					tweenable.tween({
+					  from:     { value: .5, r: 0 },
+					  to:       { value: 1, r: Math.PI*2 },
+					  duration: 800,
+					  step: function (state) {
+						selectionZone.scale.set( item.scale.x * state.value, 1, item.scale.z * state.value );
+						selectionZone.rotation.set( 0, state.r, 0 );
+					  },
+					  finish: function (state) {
+					  },
+					  easing : 'bounce'
+					});
+
+					document.querySelector(".title span").innerHTML = item.name + "</br>" + item.position.x + " - " + item.position.y;
+
+				} else {
+
+					selectionZone.visible = false;
+
+					document.querySelector(".title span").innerHTML = "";
+
+					selectionZone.target = null;
+				}
 			}
 
 			function onWindowResize() {
@@ -139,7 +234,6 @@
 				camera.updateProjectionMatrix();
 
 				renderer.setSize( window.innerWidth, window.innerHeight );
-
 			}
 
 			function onDocumentMouseMove( event ) {
@@ -150,10 +244,19 @@
 				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
 				mouse.moved = true;
-
 			}
 
-			//
+			function onDocumentMouseClick( event ) {
+
+				event.preventDefault();
+
+				selectObject( INTERSECTED );
+			}
+
+
+
+
+			// loop
 
 			function animate() {
 
@@ -167,11 +270,11 @@
 
 			function render() {
 
-				theta += 0.3;
+// 				theta += 0.1;
 
-				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+// 				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
 				camera.position.y = radius / 3;//Math.cos( THREE.Math.degToRad( theta )/2 );
-				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta/360 ) );
+// 				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta/360 ) );
 				camera.lookAt( scene.position );
 
 				camera.updateMatrixWorld();
@@ -195,7 +298,6 @@
 							INTERSECTED = intersects[ 0 ].object;
 							INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
 							INTERSECTED.material.emissive.setHex( 0x0074B0 );
-
 						}
 
 						container.style.setProperty("cursor", "pointer");
